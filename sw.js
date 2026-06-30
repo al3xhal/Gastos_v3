@@ -1,9 +1,8 @@
 /* Mis Gastos — service worker
    Guarda una copia local de los archivos de la app para que funcione
    sin conexión. No realiza ninguna conexión a servidores externos. */
-const CACHE = "mis-gastos-v3";
+const CACHE = "mis-gastos-v4";
 const ASSETS = [
-  "./",
   "./index.html",
   "./manifest.json",
   "./icon-192.png",
@@ -14,7 +13,12 @@ const ASSETS = [
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())
+    caches.open(CACHE).then((c) =>
+      // Precaché tolerante a fallos: si un archivo individual no se
+      // puede descargar, no debe bloquear la instalación del SW entera
+      // (addAll() es todo-o-nada y puede dejar la instalación colgada).
+      Promise.allSettled(ASSETS.map((url) => c.add(url)))
+    ).then(() => self.skipWaiting())
   );
 });
 
